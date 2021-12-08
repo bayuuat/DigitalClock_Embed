@@ -4,15 +4,17 @@
 #include "LedControl.h"
 #include "RTClib.h"
 
-LedControl lc = LedControl(12, 11, 10, 4);
+LedControl lc = LedControl(11, 12, 10, 4);
 
 //VARIABLE
-byte intensity = 1;
+byte intensity = 4;
 int rtc[7];
 int val;
 int tempPin = 1;
 byte mode_jam = 0;
 byte mode_sblm = mode_jam;
+int stop_disp = 1;
+
 
 //CONSTANTS
 #define jum_mode_tampilan 5
@@ -50,7 +52,7 @@ void setup()
   if (! ds1307.isrunning()) {
     Serial.println("RTC is NOT running!");
     ds1307.adjust(DateTime(F(__DATE__), F(__TIME__)));//update rtc dari waktu komputer
-  }
+  } 
 }
 
 //get time
@@ -77,7 +79,28 @@ void clear_display()
 
 void loop()
 {
-  display_clock();
+    if (stop_disp == 1){
+      String s("Bayu Aditya T - 07211840000008");
+
+      char text[s.length()];   
+      int i;
+      for (i = 0; i < sizeof(text); i++) {
+          text[i] = s[i];
+      }
+
+      for (byte x = 32; x >= 0 ; x--) {
+        for (byte y = 0; y < sizeof(text) ; y++) {
+          tiny_font( x + (y*4), 1, text[y]);
+        }
+        cls();
+        if(x==100)break;
+      }
+      stop_disp=0;
+    }
+
+    else if (stop_disp == 0){
+      display_clock();
+    }
 }
 
 void plot(byte x, byte y, byte val)
@@ -178,9 +201,11 @@ void display_clock()
     byte mnt = 100;
     byte dtk = rtc[0];
     byte old_dtk = dtk;
+
     cls();
-  
-    while (1) {
+
+    while (1) {  
+      Serial.println(stop_disp);
       get_time();
       if (buttonA.uniquePress()) {
         switch_mode();
@@ -202,6 +227,16 @@ void display_clock()
         display_temperature(3000);
         return;
       }
+      if (rtc[2] >= 17 && rtc[2] <= 5) {
+        gelap();
+      }
+      if (rtc[2] > 5 && rtc[2] < 10) {
+        def();
+      }
+      if (rtc[2] >= 10 && rtc[2] < 17) {
+        terang();
+      }
+      
   
       dtk = rtc[0];
       if (dtk != old_dtk) {
@@ -306,6 +341,7 @@ void display_date(int delaytime) {
     //print tanggal dan bulan
     char buffer[3];
     itoa(tanggal, buffer, 10);
+    tiny_font(0, 1, '0');
     tiny_font(4, 1, buffer[0]);
     if (tanggal > 9) {
       tiny_font(0, 1, buffer[0]);
@@ -504,4 +540,26 @@ int ubah_nilai(int current_value, int reset_value, int rollover_limit) {
     }
   }
   return current_value;
+}
+
+void terang(){
+  for (byte address = 0; address < 4; address++)
+  {
+      lc.setIntensity(address, 8);
+  }
+  
+}
+
+void gelap(){
+  for (byte address = 0; address < 4; address++)
+  {
+      lc.setIntensity(address, 1);
+  }
+}
+
+void def(){
+  for (byte address = 0; address < 4; address++)
+  {
+      lc.setIntensity(address, 4);
+  }
 }
